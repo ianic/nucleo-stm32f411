@@ -6,7 +6,7 @@ const regs = chip.registers;
 
 pub const interrupts = struct {
     pub fn SysTick() void {
-        ticks += 1;
+        ticker.inc();
     }
 
     pub fn EXTI15_10() void {
@@ -20,14 +20,17 @@ pub const interrupts = struct {
     }
 };
 
-var ticks: u32 = 0;
+var ticker = chip.ticker();
 var blink_speed: u32 = 500;
 
-pub fn main() void {
-    board.init(.{});
+pub fn init() void {
+    board.init(.{ .clock = board.clock.hsi_max });
+}
 
+pub fn main() void {
+    var itv = ticker.interval(blink_speed);
     while (true) {
-        if (ticks % blink_speed == 0) {
+        if (itv.ready(blink_speed)) {
             board.led.toggle();
         }
         asm volatile ("nop");
