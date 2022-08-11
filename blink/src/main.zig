@@ -23,8 +23,16 @@ pub const interrupts = struct {
 var ticker = chip.ticker();
 var blink_speed: u32 = 500;
 
+// this const is required by microzig
+pub var clock_frequencies: chip.Frequencies = undefined;
+
 pub fn init() void {
-    board.init(.{ .clock = board.clock.hsi_max });
+    //const ccfg: chip.Config = .{ .clock = board.hse_96 };
+    const ccfg: chip.Config = .{};
+    chip.init(ccfg);
+    clock_frequencies = ccfg.clock.frequencies;
+
+    board.init(.{});
 }
 
 pub fn main() void {
