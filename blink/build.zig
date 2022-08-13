@@ -8,7 +8,7 @@ pub fn build(b: *std.build.Builder) !void {
         .board = micro.boards.nucleo_stm32f411,
     };
 
-    const bin = try micro.addEmbeddedExecutable(
+    const exe = try micro.addEmbeddedExecutable(
         b,
         "board.elf",
         "src/main.zig",
@@ -18,9 +18,17 @@ pub fn build(b: *std.build.Builder) !void {
             // .packages = &my_packages,
         },
     );
-    bin.setBuildMode(.ReleaseSmall);
+    exe.setBuildMode(.ReleaseSmall);
+    //exe.setBuildMode(.Debug);
 
-    const bin_path = b.getInstallPath(.{ .bin = .{} }, bin.out_filename);
+    const bin = b.addInstallRaw(
+        exe,
+        "board.bin",
+        .{},
+    );
+    b.getInstallStep().dependOn(&bin.step);
+
+    const bin_path = b.getInstallPath(.{ .bin = .{} }, exe.out_filename);
     const flash_cmd = b.addSystemCommand(&[_][]const u8{
         "/Applications/STMicroelectronics/STM32Cube/STM32CubeProgrammer/STM32CubeProgrammer.app/Contents/MacOs/bin/STM32_Programmer_CLI",
         "-c",
@@ -33,8 +41,8 @@ pub fn build(b: *std.build.Builder) !void {
     const flash_step = b.step("flash", "Flash and run the app on your STM32F411");
     flash_step.dependOn(&flash_cmd.step);
 
-    b.default_step.dependOn(&bin.step);
-    bin.install();
+    b.default_step.dependOn(&exe.step);
+    exe.install();
 }
 
 pub fn srcDir() []const u8 {

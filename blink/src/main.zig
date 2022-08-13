@@ -2,7 +2,6 @@ const std = @import("std");
 const micro = @import("microzig");
 const chip = micro.chip;
 const board = micro.board;
-const regs = chip.registers;
 
 pub const interrupts = struct {
     pub fn SysTick() void {
@@ -10,7 +9,7 @@ pub const interrupts = struct {
     }
 
     pub fn EXTI15_10() void {
-        if (chip.irq.pending(.exti13)) {
+        if (board.button.irq_pending()) {
             blink_speed = switch (blink_speed) {
                 500 => 100,
                 100 => 50,
@@ -27,7 +26,7 @@ var blink_speed: u32 = 500;
 pub var clock_frequencies: chip.Frequencies = undefined;
 
 pub fn init() void {
-    //const ccfg: chip.Config = .{ .clock = board.hse_96 };
+    // const ccfg: chip.Config = .{ .clock = board.hse_96 }; // using hse
     const ccfg: chip.Config = .{};
     chip.init(ccfg);
     clock_frequencies = ccfg.clock.frequencies;
