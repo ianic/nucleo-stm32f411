@@ -1,4 +1,3 @@
-const std = @import("std");
 const micro = @import("microzig");
 const chip = micro.chip;
 const board = micro.board;
