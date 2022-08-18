@@ -32,14 +32,19 @@ pub fn init() void {
     clock_frequencies = ccfg.clock.frequencies;
 
     board.init(.{});
+
+    chip.adc.init(.{
+        .irq_enable = true,
+        .apb2_clock = clock_frequencies.apb2,
+        .data = &data,
+        .inputs = &.{ .temp, .vref, .pa0, .pa1, .pc4 },
+    });
 }
 
-//var temp: f32 = 0;
 var conversions: u32 = 0;
+var data: [16]u16 = .{0xaaaa} ** 16;
 
 pub fn main() void {
-    adcInit();
-
     var itv = ticker.interval(200);
     var testTicker = ticker.interval(2000);
     var testOk: bool = true;
@@ -61,38 +66,6 @@ pub fn main() void {
 
 const regs = chip.registers;
 
-var data: [16]u16 = .{0xaaaa} ** 16;
-
-fn adcInit() void {
-    const inputs = [_]adc.Input{ .temp, .vref, .pa0, .pa1, .pc4 };
-    if (inputs[1] == .vref) {
-        asm volatile ("nop");
-    }
-    const cfg: adc.Config = .{
-        .irq_enable = true,
-        .data = &data,
-        .inputs = &inputs,
-        .channels = &.{ 18, 17, 0, 1, 14 },
-    };
-    config(cfg);
-    chip.adc.init(cfg);
-}
-
-fn config(cfg: adc.Config) void {
-    data[0] = @intCast(u16, cfg.channels[0]);
-    data[1] = @intCast(u16, cfg.channels[1]);
-    data[2] = @intCast(u16, cfg.channels[2]);
-    data[3] = @intCast(u16, cfg.channels[3]);
-    data[4] = @intCast(u16, cfg.channels[4]);
-
-    data[5] = @intCast(u16, @enumToInt(cfg.inputs[0]));
-    data[6] = @intCast(u16, @enumToInt(cfg.inputs[1]));
-    data[7] = @intCast(u16, @enumToInt(cfg.inputs[2]));
-    data[8] = @intCast(u16, @enumToInt(cfg.inputs[3]));
-    data[9] = @intCast(u16, @enumToInt(cfg.inputs[4]));
-    //@breakpoint();
-}
-
 fn adcTests() bool {
     var tr = TestResults(32).init();
 
@@ -106,33 +79,22 @@ fn adcTests() bool {
 
     tr.add(regs.ADC1.SMPR1.read().SMP18 == 0b101);
     tr.add(regs.ADC1.SMPR1.read().SMP17 == 0b101);
+    tr.add(regs.ADC1.SMPR2.read().SMP0 == 0b101);
 
     // gpio pins are in analog mode
     tr.add(regs.GPIOA.MODER.read().MODER0 == 3);
     tr.add(regs.GPIOA.MODER.read().MODER1 == 3);
+    tr.add(regs.GPIOC.MODER.read().MODER4 == 3);
 
     // temerature sensor is reading value
-    var temp = adc.tempValueToC(data[0]);
-    tr.add(temp > 20 and temp < 40);
+    var temp: *volatile f32 = &adc.tempValueToC(data[0]);
+    tr.add(temp.* > 20 and temp.* < 40);
 
     var vref = data[1];
     tr.add(vref > 1480 and vref < 1490);
 
-    var results = tr.get();
-    if (!tr.ok()) {
-        // trying to prevent optimization
-        if (temp > 30 and vref < 1000 and results[0]) {
-            asm volatile ("nop");
-        }
-        //@breakpoint();
-        //gdb commands:
-        // info locals
-        // print (f32)temp
-        // x/32b results.ptr
-        // x/32b &tr
-        // x/16hx &data
-        // x/16hd &data
-    }
+    var results: *volatile []bool = &tr.get();
+    _ = results;
     return tr.ok();
 }
 

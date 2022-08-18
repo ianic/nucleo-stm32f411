@@ -3,3 +3,4 @@ zig-out/
 /docs/
 /tmp/
 /script/openocd.log
+/script/blackmagic.log
