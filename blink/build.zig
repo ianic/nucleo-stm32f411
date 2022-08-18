@@ -19,6 +19,7 @@ pub fn build(b: *std.build.Builder) !void {
         },
     );
     exe.setBuildMode(.ReleaseSmall);
+    //exe.setBuildMode(.ReleaseSafe);
     //exe.setBuildMode(.Debug);
 
     const bin = b.addInstallRaw(
