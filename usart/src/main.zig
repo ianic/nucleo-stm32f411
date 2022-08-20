@@ -44,13 +44,19 @@ pub fn main() !void {
     var itv = ticker.interval(blink_speed);
     var buf: [128]u8 = undefined;
 
+    var sendTime: u32 = 0;
     while (true) {
         if (itv.ready(blink_speed)) {
             board.led.toggle();
-            const msg = try std.fmt.bufPrint(buf[0..], "hello from nucleo board after {d} ticks\r\n", .{ticker.ticks});
+            const sendStart = ticker.ticks;
+            const msg = try std.fmt.bufPrint(buf[0..], "ticks {d}, sendTime: {d} iso medo u ducan\n", .{
+                ticker.ticks,
+                sendTime,
+            });
             for (msg) |ch| {
                 uart1.tx(ch);
             }
+            sendTime = ticker.ticks - sendStart;
         }
         asm volatile ("nop");
     }
