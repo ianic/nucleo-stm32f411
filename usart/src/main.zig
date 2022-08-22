@@ -4,7 +4,6 @@ const chip = micro.chip;
 const board = micro.board;
 const uart = chip.uart;
 const gpio = chip.gpio;
-const regs = chip.registers;
 
 pub const interrupts = struct {
     pub fn SysTick() void {
@@ -68,24 +67,26 @@ var buf: [128]u8 = undefined;
 pub fn main() !void {
     var itv = ticker.interval(blink_speed);
 
-    var sendTime: u32 = 0;
+    var lastTicks: u32 = 0;
     while (true) {
         if (itv.ready(blink_speed)) {
             board.led.toggle();
-            const sendStart = ticker.ticks;
-            const msg = try std.fmt.bufPrint(buf[0..], "ticks {d}, sendTime: {d} iso medo u ducan\n", .{
-                ticker.ticks,
-                sendTime,
+        }
+        if (uart1.txReady()) {
+            const ticks = ticker.ticks;
+            const msg = try std.fmt.bufPrint(buf[0..], "ticks {d}, diff: {d} 012345678901234567890123456789012345678901234567890123456789\n", .{
+                ticks,
+                ticks - lastTicks,
             });
-            dma(@intCast(u16, msg.len));
-            // for (msg) |ch| {
-            //     uart1.tx(ch);
-            // }
-            sendTime = ticker.ticks - sendStart;
+            _ = uart1.tx(msg);
+            lastTicks = ticks;
         }
         asm volatile ("nop");
     }
 }
+
+const irq = chip.irq;
+const regs = chip.registers;
 
 fn dma(number_of_data_items: u16) void {
     const peripheral_address = @ptrToInt(regs.USART1.DR);
@@ -119,6 +120,7 @@ fn dma(number_of_data_items: u16) void {
         .TCIE = 1, // transfer complete interrupt enable
         //.PL = 11, // priority level: very high
     });
+    irq.enable(.dma2_stream7);
 
     pa_reg.modify(.{ .PA = peripheral_address });
     ma_reg.modify(.{ .M0A = memory_address });
