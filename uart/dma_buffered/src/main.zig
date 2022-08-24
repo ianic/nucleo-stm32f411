@@ -19,20 +19,6 @@ pub const interrupts = struct {
             };
         }
     }
-
-    pub fn USART1() void {
-        if (uart1.rxReady()) {
-            rb.push(uart1.rx());
-            uart1.txIrq(.enable);
-        }
-        if (uart1.txReady()) {
-            if (rb.pop()) |b| {
-                uart1.tx(b);
-            } else {
-                uart1.txIrq(.disable);
-            }
-        }
-    }
 };
 
 var ticker = chip.ticker();
@@ -43,7 +29,8 @@ const clock = chip.hsi_100;
 
 const Uart1 = uart.Uart1(.{
     .tx = gpio.PA15,
-    .rx = gpio.PB7,
+    //.rx = gpio.PB7,
+    .dma_enable = true,
     .clock_frequencies = clock.frequencies,
 });
 var uart1: Uart1 = undefined;
@@ -55,16 +42,25 @@ pub fn init() void {
 }
 //------ init
 
-var rb = @import("ring_buffer.zig").RingBuffer(1024).init();
-//var buf: [128]u8 = undefined;
+var buf: [128]u8 = undefined;
 
 pub fn main() !void {
     var itv = ticker.interval(blink_speed);
-    uart1.rxIrq(.enable);
 
+    var lastTicks: u32 = 0;
     while (true) {
         if (itv.ready(blink_speed)) {
             board.led.toggle();
+
+            if (uart1.txReady()) {
+                const ticks = ticker.ticks;
+                const msg = try std.fmt.bufPrint(buf[0..], "ticks {d}, diff: {d}\n", .{
+                    ticks,
+                    ticks - lastTicks,
+                });
+                _ = uart1.tx(msg);
+                lastTicks = ticks;
+            }
         }
         asm volatile ("nop");
     }

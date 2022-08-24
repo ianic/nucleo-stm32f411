@@ -56,7 +56,6 @@ pub fn init() void {
 //------ init
 
 var rb = @import("ring_buffer.zig").RingBuffer(1024).init();
-//var buf: [128]u8 = undefined;
 
 pub fn main() !void {
     var itv = ticker.interval(blink_speed);
