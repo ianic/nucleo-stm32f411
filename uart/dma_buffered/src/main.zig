@@ -19,6 +19,69 @@ pub const interrupts = struct {
             };
         }
     }
+
+    pub fn DMA2_Stream5() void {
+        echo.rxInterrupt();
+    }
+    pub fn DMA2_Stream7() void {
+        echo.txInterrupt();
+    }
+};
+
+const Echo = struct {
+    rxBuf: []u8 = undefined,
+    txBuf: []u8 = undefined,
+
+    const Self = @This();
+
+    pub fn rxInterrupt(self: *Self) void {
+        self.run();
+    }
+
+    pub fn txInterrupt(self: *Self) void {
+        self.run();
+    }
+
+    pub fn run(self: *Self) void {
+        if (uart1.rx.ready()) { // receive is finished
+            self.confirmRx();
+            self.startRx();
+        }
+        if (uart1.tx.ready()) { // transmit finished
+            self.confirmTx();
+            self.startTx();
+        }
+    }
+
+    fn confirmTx(self: *Self) void {
+        if (self.txBuf.len > 0) {
+            bbuf.read(self.txBuf.len);
+        }
+    }
+
+    fn startTx(self: *Self) void {
+        self.txBuf = bbuf.readable();
+        if (self.txBuf.len > 0) {
+            uart1.tx.write(self.txBuf);
+        } else {
+            uart1.tx.irq.disable();
+        }
+    }
+
+    fn confirmRx(self: *Self) void {
+        if (self.rxBuf.len > 0) {
+            bbuf.written(self.rxBuf.len);
+        }
+    }
+
+    fn startRx(self: *Self) void {
+        self.rxBuf = bbuf.writable_max(rxChunk);
+        if (self.rxBuf.len > 0) {
+            uart1.rx.read(self.rxBuf);
+        } else {
+            uart1.rx.irq.disable();
+        }
+    }
 };
 
 var ticker = chip.ticker();
@@ -27,40 +90,32 @@ var blink_speed: u32 = 500;
 //------ init
 const clock = chip.hsi_100;
 
-const Uart1 = uart.Uart1(.{
+const uart1 = uart.Uart1(.{
     .tx = gpio.PA15,
-    //.rx = gpio.PB7,
-    .dma_enable = true,
+    .rx = gpio.PB7,
     .clock_frequencies = clock.frequencies,
-});
-var uart1: Uart1 = undefined;
+}).Dma();
+var echo = Echo{};
 
 pub fn init() void {
     chip.init(.{ .clock = clock });
     board.init(.{});
-    uart1 = Uart1.init();
+    uart1.init();
+    bbuf = BipBuffer.init();
 }
 //------ init
 
-var buf: [128]u8 = undefined;
+const rxChunk = 1024;
+
+const BipBuffer = @import("bip_buffer.zig").BipBuffer(4096);
+var bbuf: BipBuffer = undefined;
 
 pub fn main() !void {
     var itv = ticker.interval(blink_speed);
-
-    var lastTicks: u32 = 0;
+    echo.run();
     while (true) {
         if (itv.ready(blink_speed)) {
             board.led.toggle();
-
-            if (uart1.txReady()) {
-                const ticks = ticker.ticks;
-                const msg = try std.fmt.bufPrint(buf[0..], "ticks {d}, diff: {d}\n", .{
-                    ticks,
-                    ticks - lastTicks,
-                });
-                _ = uart1.tx(msg);
-                lastTicks = ticks;
-            }
         }
         asm volatile ("nop");
     }

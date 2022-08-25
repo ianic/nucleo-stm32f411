@@ -21,15 +21,14 @@ pub const interrupts = struct {
     }
 
     pub fn USART1() void {
-        if (uart1.rxReady()) {
-            rb.push(uart1.rx());
-            uart1.txIrq(.enable);
+        if (uart1.rx.ready()) { // read data register is not empty
+            rb.push(uart1.rx.read()); // read clears RXNE flag
         }
-        if (uart1.txReady()) {
+        if (uart1.tx.ready()) { // transmit data register is empty
             if (rb.pop()) |b| {
-                uart1.tx(b);
+                uart1.tx.write(b); // write clars TXE flag
             } else {
-                uart1.txIrq(.disable);
+                uart1.tx.irq.disable(); // disable interrupt because TXE is set and will raise another interrupt if not disabled
             }
         }
     }
@@ -41,17 +40,16 @@ var blink_speed: u32 = 500;
 //------ init
 const clock = chip.hsi_100;
 
-const Uart1 = uart.Uart1(.{
+const uart1 = uart.Uart1(.{
     .tx = gpio.PA15,
     .rx = gpio.PB7,
     .clock_frequencies = clock.frequencies,
-});
-var uart1: Uart1 = undefined;
+}).Interrupt();
 
 pub fn init() void {
     chip.init(.{ .clock = clock });
     board.init(.{});
-    uart1 = Uart1.init();
+    uart1.init();
 }
 //------ init
 
@@ -59,7 +57,6 @@ var rb = @import("ring_buffer.zig").RingBuffer(1024).init();
 
 pub fn main() !void {
     var itv = ticker.interval(blink_speed);
-    uart1.rxIrq(.enable);
 
     while (true) {
         if (itv.ready(blink_speed)) {
