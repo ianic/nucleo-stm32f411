@@ -105,7 +105,7 @@ pub fn init() void {
 }
 //------ init
 
-const rxChunk = 1024;
+const rxChunk = 8;
 
 const BipBuffer = @import("bip_buffer.zig").BipBuffer(4096);
 var bbuf: BipBuffer = undefined;
