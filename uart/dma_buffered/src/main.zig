@@ -75,7 +75,7 @@ const Echo = struct {
     }
 
     fn startRx(self: *Self) void {
-        self.rxBuf = bbuf.writable_max(rxChunk);
+        self.rxBuf = bbuf.writableWithLimit(rxChunk);
         if (self.rxBuf.len > 0) {
             uart1.rx.read(self.rxBuf);
         } else {
@@ -91,10 +91,9 @@ var blink_speed: u32 = 500;
 const clock = chip.hsi_100;
 
 const uart1 = uart.Uart1(.{
-    .tx = gpio.PA15,
-    .rx = gpio.PB7,
-    .clock_frequencies = clock.frequencies,
-}).Dma();
+    .tx = gpio.USART1.TX.PA15,
+    .rx = gpio.USART1.RX.PB7,
+}, clock.frequencies).Dma();
 var echo = Echo{};
 
 pub fn init() void {
@@ -107,7 +106,7 @@ pub fn init() void {
 
 const rxChunk = 8;
 
-const BipBuffer = @import("bip_buffer.zig").BipBuffer(4096);
+const BipBuffer = @import("bip_buffer.zig").BipBuffer(1024);
 var bbuf: BipBuffer = undefined;
 
 pub fn main() !void {

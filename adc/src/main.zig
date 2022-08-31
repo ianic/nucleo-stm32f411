@@ -22,20 +22,13 @@ pub const interrupts = struct {
 
 var ticker = chip.ticker();
 
-// this const is required by microzig
-pub var clock_frequencies: chip.Frequencies = undefined;
-
 pub fn init() void {
-    // const ccfg: chip.Config = .{ .clock = board.hse_96 }; // using hse
-    const ccfg: chip.Config = .{};
-    chip.init(ccfg);
-    clock_frequencies = ccfg.clock.frequencies;
-
+    const clock = chip.hsi_100;
+    chip.init(.{ .clock = clock });
     board.init(.{});
-
     chip.adc.init(.{
         .irq_enable = true,
-        .apb2_clock = clock_frequencies.apb2,
+        .apb2_clock = clock.frequencies.apb2,
         .data = &data,
         .inputs = &.{ .temp, .vref, .pa0, .pa1, .pc4 },
     });
@@ -64,12 +57,11 @@ pub fn main() void {
     }
 }
 
-const regs = chip.registers;
-
 fn adcTests() bool {
+    const regs = chip.regs;
     var tr = TestResults(32).init();
 
-    // test adc register values
+    // // test adc register values
     tr.add(regs.ADC1.SQR1.read().L == 4);
     tr.add(regs.ADC1.SQR3.read().SQ1 == 18);
     tr.add(regs.ADC1.SQR3.read().SQ2 == 17);
@@ -87,14 +79,14 @@ fn adcTests() bool {
     tr.add(regs.GPIOC.MODER.read().MODER4 == 3);
 
     // temerature sensor is reading value
-    var temp: *volatile f32 = &adc.tempValueToC(data[0]);
-    tr.add(temp.* > 20 and temp.* < 40);
+    var temp: f32 = adc.tempValueToC(data[0]);
+    tr.add(temp > 20 and temp < 40);
 
     var vref = data[1];
     tr.add(vref > 1480 and vref < 1490);
 
-    var results: *volatile []bool = &tr.get();
-    _ = results;
+    // var results: []bool = tr.get();
+    // _ = results;
     return tr.ok();
 }
 

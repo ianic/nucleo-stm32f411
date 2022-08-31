@@ -28,10 +28,9 @@ var blink_speed: u32 = 500;
 const clock = chip.hsi_100;
 
 const uart1 = uart.Uart1(.{
-    .tx = gpio.PA15,
-    .rx = gpio.PB7,
-    .clock_frequencies = clock.frequencies,
-}).Pooling();
+    .tx = gpio.USART1.TX.PA15,
+    .rx = gpio.USART1.RX.PB7,
+}, clock.frequencies).Pooling();
 
 pub fn init() void {
     chip.init(.{ .clock = clock });

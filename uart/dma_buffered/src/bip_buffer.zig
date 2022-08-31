@@ -24,7 +24,7 @@ pub fn BipBuffer(buflen: u16) type {
             return b.buffer[b.w .. b.r - 1];
         }
 
-        pub fn writable_max(b: *Self, len: u16) []u8 {
+        pub fn writableWithLimit(b: *Self, len: u16) []u8 {
             var buf = b.writable(len);
             if (buf.len > len) {
                 return buf[0..len];
