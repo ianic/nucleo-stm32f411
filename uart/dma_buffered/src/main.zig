@@ -88,7 +88,9 @@ const Echo = struct {
     }
 };
 
-var button: board.Button = undefined;
+const button = board.button;
+const led = board.led;
+
 var blink_speed: u32 = 500;
 var ticker = chip.ticker();
 
@@ -98,11 +100,12 @@ var echo = Echo{};
 pub fn init() void {
     const clock = chip.hsi_100;
     chip.init(.{ .clock = clock });
-    button = board.Button.init(.{ .exti = .{ .enable = true } });
+    button.init(.{ .exti = .{ .enable = true } });
+    led.init(.{});
 
     uart1.init(clock.frequencies);
-    gpio.usart1.tx.Pa15().init(.{});
-    gpio.usart1.rx.Pb7().init(.{});
+    gpio.pa15.usart1.tx(.{});
+    gpio.pb7.usart1.rx(.{});
 
     bbuf = BipBuffer.init();
 }
@@ -113,7 +116,6 @@ const BipBuffer = @import("bip_buffer.zig").BipBuffer(1024);
 var bbuf: BipBuffer = undefined;
 
 pub fn main() !void {
-    var led = board.Led.init(.{});
     var itv = ticker.interval(blink_speed);
 
     echo.run();

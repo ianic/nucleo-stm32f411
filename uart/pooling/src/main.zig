@@ -11,7 +11,7 @@ pub const interrupts = struct {
     }
 
     pub fn EXTI15_10() void {
-        if (button.extiPending()) {
+        if (button.exti.pending()) {
             changeBlinkSpeed();
         }
     }
@@ -25,7 +25,9 @@ fn changeBlinkSpeed() void {
     };
 }
 
-var button: board.Button = undefined;
+const button = board.button;
+const led = board.led;
+
 var blink_speed: u32 = 500;
 var ticker = chip.ticker();
 
@@ -34,18 +36,18 @@ const uart1 = uart.Uart1(.{}).pooling();
 pub fn init() void {
     const clock = chip.hsi_100;
     chip.init(.{ .clock = clock });
-    button = board.Button.init(.{ .exti = .{ .enable = true } });
+    button.init(.{ .exti = .{ .enable = true } });
+    led.init(.{});
 
-    //uart1 = Uart1.init(clock.frequencies);
     uart1.init(clock.frequencies);
-    gpio.usart1.tx.Pa15().init(.{});
-    gpio.usart1.rx.Pb7().init(.{});
+    //gpio.usart1.tx.pa15(.{});
+    //gpio.usart1.rx.pb7(.{});
+    gpio.pa15.usart1.tx(.{});
+    gpio.pb7.usart1.rx(.{});
 }
 
 pub fn main() !void {
-    var led = board.Led.init(.{});
     var itv = ticker.interval(blink_speed);
-
     while (true) {
         if (itv.ready(blink_speed)) {
             led.toggle();

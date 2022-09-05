@@ -8,7 +8,7 @@ pub const interrupts = struct {
     }
 
     pub fn EXTI15_10() void {
-        if (button.extiPending()) {
+        if (button.exti.pending()) {
             changeBlinkSpeed();
         }
     }
@@ -25,17 +25,16 @@ fn changeBlinkSpeed() void {
     };
 }
 
-var button: board.Button = undefined;
+const button = board.button;
+const led = board.led;
 
 pub fn init() void {
     chip.init(.{});
-    button = board.Button.init(.{ .exti = .{ .enable = true } });
+    button.init(.{ .exti = .{ .enable = true } });
+    led.init(.{});
 }
 
 pub fn main() void {
-    _ = button;
-    var led = board.Led.init(.{});
-
     var itv = ticker.interval(blink_speed);
     while (true) {
         if (itv.ready(blink_speed)) {

@@ -38,7 +38,9 @@ fn changeBlinkSpeed() void {
     };
 }
 
-var button: board.Button = undefined;
+const button = board.button;
+const led = board.led;
+
 var blink_speed: u32 = 500;
 var ticker = chip.ticker();
 
@@ -47,17 +49,17 @@ const uart1 = uart.Uart1(.{}).interrupt();
 pub fn init() void {
     const clock = chip.hsi_100;
     chip.init(.{ .clock = clock });
-    button = board.Button.init(.{ .exti = .{ .enable = true } });
+    button.init(.{ .exti = .{ .enable = true } });
+    led.init(.{});
 
     uart1.init(clock.frequencies);
-    gpio.usart1.tx.Pa15().init(.{});
-    gpio.usart1.rx.Pb7().init(.{});
+    gpio.pa15.usart1.tx(.{});
+    gpio.pb7.usart1.rx(.{});
 }
 
 var rb = @import("ring_buffer.zig").RingBuffer(1024).init();
 
 pub fn main() !void {
-    var led = board.Led.init(.{});
     var itv = ticker.interval(blink_speed);
 
     while (true) {
