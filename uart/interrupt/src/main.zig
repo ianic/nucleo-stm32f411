@@ -42,20 +42,17 @@ var button: board.Button = undefined;
 var blink_speed: u32 = 500;
 var ticker = chip.ticker();
 
-//------ init
-const clock = chip.hsi_100;
-
-const uart1 = uart.Uart1(.{}, clock.frequencies).Interrupt();
+const uart1 = uart.Uart1(.{}).Interrupt();
 
 pub fn init() void {
+    const clock = chip.hsi_100;
     chip.init(.{ .clock = clock });
     button = board.Button.init(.{ .exti = .{ .enable = true } });
 
-    uart1.init();
+    uart1.init(clock.frequencies);
     gpio.usart1.tx.Pa15().init(.{});
     gpio.usart1.rx.Pb7().init(.{});
 }
-//------ init
 
 var rb = @import("ring_buffer.zig").RingBuffer(1024).init();
 
