@@ -11,12 +11,8 @@ pub const interrupts = struct {
     }
 
     pub fn EXTI15_10() void {
-        if (board.button.irq_pending()) {
-            blink_speed = switch (blink_speed) {
-                500 => 100,
-                100 => 50,
-                else => 500,
-            };
+        if (button.extiPending()) {
+            changeBlinkSpeed();
         }
     }
 
@@ -27,6 +23,14 @@ pub const interrupts = struct {
         echo.txInterrupt();
     }
 };
+
+fn changeBlinkSpeed() void {
+    blink_speed = switch (blink_speed) {
+        500 => 100,
+        100 => 50,
+        else => 500,
+    };
+}
 
 const Echo = struct {
     rxBuf: []u8 = undefined,
@@ -84,22 +88,24 @@ const Echo = struct {
     }
 };
 
-var ticker = chip.ticker();
+var button: board.Button = undefined;
 var blink_speed: u32 = 500;
+var ticker = chip.ticker();
 
 //------ init
 const clock = chip.hsi_100;
 
-const uart1 = uart.Uart1(.{
-    .tx = gpio.USART1.TX.PA15,
-    .rx = gpio.USART1.RX.PB7,
-}, clock.frequencies).Dma();
+const uart1 = uart.Uart1(.{}, clock.frequencies).Dma();
 var echo = Echo{};
 
 pub fn init() void {
     chip.init(.{ .clock = clock });
-    board.init(.{});
+    button = board.Button.init(.{ .exti = .{ .enable = true } });
+
     uart1.init();
+    gpio.usart1.tx.Pa15().init(.{});
+    gpio.usart1.rx.Pb7().init(.{});
+
     bbuf = BipBuffer.init();
 }
 //------ init
@@ -110,11 +116,13 @@ const BipBuffer = @import("bip_buffer.zig").BipBuffer(1024);
 var bbuf: BipBuffer = undefined;
 
 pub fn main() !void {
+    var led = board.Led.init(.{});
     var itv = ticker.interval(blink_speed);
+
     echo.run();
     while (true) {
         if (itv.ready(blink_speed)) {
-            board.led.toggle();
+            led.toggle();
         }
         asm volatile ("nop");
     }

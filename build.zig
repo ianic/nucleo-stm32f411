@@ -16,6 +16,8 @@ pub fn build(b: *std.build.Builder) !void {
     const examples = [_]Example{
         .{ .name = "blink", .source = "blink/src/main.zig" },
         .{ .name = "uart-pooling", .source = "uart/pooling/src/main.zig" },
+        .{ .name = "uart-interrupt", .source = "uart/interrupt/src/main.zig" },
+        .{ .name = "uart-dma", .source = "uart/dma_buffered/src/main.zig" },
     };
 
     for (examples) |e| {

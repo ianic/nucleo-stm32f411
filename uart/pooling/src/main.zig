@@ -26,22 +26,21 @@ fn changeBlinkSpeed() void {
 }
 
 var button: board.Button = undefined;
-
-var ticker = chip.ticker();
 var blink_speed: u32 = 500;
+var ticker = chip.ticker();
 
 //------ init
 const clock = chip.hsi_100;
 
-const uart1 = uart.Uart1(.{
-    .tx = gpio.usart1.tx.Pa15(),
-    .rx = gpio.usart1.rx.Pb7(),
-}, clock.frequencies).Pooling();
+const uart1 = uart.Uart1(.{}, clock.frequencies).Pooling();
 
 pub fn init() void {
     chip.init(.{ .clock = clock });
     button = board.Button.init(.{ .exti = .{ .enable = true } });
+
     uart1.init();
+    gpio.usart1.tx.Pa15().init(.{});
+    gpio.usart1.rx.Pb7().init(.{});
 }
 //------ init
 
