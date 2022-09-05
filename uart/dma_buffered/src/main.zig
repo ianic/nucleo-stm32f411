@@ -92,7 +92,7 @@ var button: board.Button = undefined;
 var blink_speed: u32 = 500;
 var ticker = chip.ticker();
 
-const uart1 = uart.Uart1(.{}).Dma();
+const uart1 = uart.Uart1(.{}).dma();
 var echo = Echo{};
 
 pub fn init() void {

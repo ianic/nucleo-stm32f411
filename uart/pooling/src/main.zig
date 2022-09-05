@@ -29,13 +29,14 @@ var button: board.Button = undefined;
 var blink_speed: u32 = 500;
 var ticker = chip.ticker();
 
-const uart1 = uart.Uart1(.{}).Pooling();
+const uart1 = uart.Uart1(.{}).pooling();
 
 pub fn init() void {
     const clock = chip.hsi_100;
     chip.init(.{ .clock = clock });
     button = board.Button.init(.{ .exti = .{ .enable = true } });
 
+    //uart1 = Uart1.init(clock.frequencies);
     uart1.init(clock.frequencies);
     gpio.usart1.tx.Pa15().init(.{});
     gpio.usart1.rx.Pb7().init(.{});
@@ -52,6 +53,7 @@ pub fn main() !void {
 
         if (uart1.rx.ready()) { // read RXNE flag (receive not empty)
             const b = uart1.rx.read(); // read rx byte
+            //_ = b;
             uart1.tx.write(b); // transmit (this will block until tx is ready)
         }
 

@@ -42,7 +42,7 @@ var button: board.Button = undefined;
 var blink_speed: u32 = 500;
 var ticker = chip.ticker();
 
-const uart1 = uart.Uart1(.{}).Interrupt();
+const uart1 = uart.Uart1(.{}).interrupt();
 
 pub fn init() void {
     const clock = chip.hsi_100;
