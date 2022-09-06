@@ -1,18 +1,22 @@
-#!/usr/bin/env bash -ex
+#!/usr/bin/env bash
+set -exm
+
+# first argument binary to flash and debug
+name="${1:-blink}"
 
 git_root=$(git rev-parse --show-toplevel)
-dir=$(pwd)
 
-# #pkill arm-none-eabi-gdb || true
-# pkill aarch64-none-elf-gdb  || true
-# pkill blackmagic || true
-# zig build flash
+# kill st-util from last session, if still running
+pkill st-util || true
+
+# build and flash firmware
+zig build
+st-flash --reset write $git_root/zig-out/bin/$name.bin 0x08000000
 
 cd $git_root/script
-# /Users/ianic/code/blackmagic/src/blackmagic &> blackmagic.log &
-
-
-#arm-none-eabi-gdb -x openocd.gdb $dir/zig-out/bin/board.elf --tui
-/Applications/ArmGNUToolchain/11.3.rel1/aarch64-none-elf/bin/aarch64-none-elf-gdb \
-    -x blackmagic.gdb \
-    $dir/zig-out/bin/board.elf --tui
+# start st-util debugger
+st-util &> st-util.log &
+# start gdb
+arm-none-eabi-gdb -x gdb.conf $git_root/zig-out/bin/$name.elf --tui
+# clanup
+pkill st-util || true
