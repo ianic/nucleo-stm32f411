@@ -18,6 +18,7 @@ pub fn build(b: *std.build.Builder) !void {
         .{ .name = "uart-pooling", .source = "uart/pooling/src/main.zig" },
         .{ .name = "uart-interrupt", .source = "uart/interrupt/src/main.zig" },
         .{ .name = "uart-dma", .source = "uart/dma_buffered/src/main.zig" },
+        .{ .name = "adc", .source = "adc/src/main.zig" },
     };
 
     for (examples) |e| {

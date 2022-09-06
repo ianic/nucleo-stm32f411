@@ -9,12 +9,6 @@ pub const interrupts = struct {
         ticker.inc();
     }
 
-    pub fn EXTI15_10() void {
-        if (board.button.irq_pending()) {
-            //
-        }
-    }
-
     pub fn ADC() void {
         conversions += 1;
     }
@@ -25,7 +19,7 @@ var ticker = chip.ticker();
 pub fn init() void {
     const clock = chip.hsi_100;
     chip.init(.{ .clock = clock });
-    board.init(.{});
+
     chip.adc.init(.{
         .irq_enable = true,
         .apb2_clock = clock.frequencies.apb2,
@@ -38,6 +32,9 @@ var conversions: u32 = 0;
 var data: [16]u16 = .{0xaaaa} ** 16;
 
 pub fn main() void {
+    const led = board.led;
+    led.init(.{});
+
     var itv = ticker.interval(200);
     var testTicker = ticker.interval(2000);
     var testOk: bool = true;
@@ -45,9 +42,9 @@ pub fn main() void {
     while (true) {
         if (itv.ready(200)) {
             if (testOk) {
-                board.led.toggle();
+                led.toggle();
             } else {
-                board.led.on();
+                led.on();
             }
         }
         if (testTicker.ready(2000)) {
